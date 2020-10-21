@@ -36,6 +36,7 @@ import {PlaygroundPreview} from './playground-preview.js';
 import './playground-editor.js';
 import {PlaygroundEditor} from './playground-editor.js';
 import './playground-preview.js';
+import {PlaygroundFilePicker} from './playground-file-picker.js';
 
 declare global {
   interface ImportMeta {
@@ -103,7 +104,7 @@ export class PlaygroundProject extends LitElement {
   private _slot!: HTMLSlotElement;
 
   /** The editors that have registered themselves with this project. */
-  private _editors = new Set<PlaygroundEditor>();
+  private _editors = new Set<PlaygroundEditor | PlaygroundFilePicker>();
 
   /** The previews that have registered themselves with this project. */
   private _previews = new Set<PlaygroundPreview>();
@@ -175,12 +176,12 @@ export class PlaygroundProject extends LitElement {
     this._compileProject();
   }
 
-  _registerEditor(editor: PlaygroundEditor) {
+  _registerEditor(editor: PlaygroundEditor | PlaygroundFilePicker) {
     editor.files = this._files;
     this._editors.add(editor);
   }
 
-  _unregisterEditor(editor: PlaygroundEditor) {
+  _unregisterEditor(editor: PlaygroundEditor | PlaygroundFilePicker) {
     this._editors.delete(editor);
   }
 

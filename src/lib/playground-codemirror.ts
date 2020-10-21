@@ -153,6 +153,8 @@ export class PlaygroundCodeMirror extends LitElement {
 
   private _resizeObserver?: ResizeObserver;
 
+  private _valueChangingFromOutside = false;
+
   update(
     changedProperties: TypedMap<
       Omit<PlaygroundCodeMirror, keyof LitElement | 'update'>
@@ -165,7 +167,9 @@ export class PlaygroundCodeMirror extends LitElement {
       for (const prop of changedProperties.keys()) {
         switch (prop) {
           case 'value':
+            this._valueChangingFromOutside = true;
             cm.setValue(this.value ?? '');
+            this._valueChangingFromOutside = false;
             break;
           case 'lineNumbers':
             cm.setOption('lineNumbers', this.lineNumbers);
@@ -223,7 +227,9 @@ export class PlaygroundCodeMirror extends LitElement {
     );
     cm.on('change', () => {
       this._value = cm.getValue();
-      this.dispatchEvent(new Event('change'));
+      if (!this._valueChangingFromOutside) {
+        this.dispatchEvent(new Event('change'));
+      }
     });
     this._codemirror = cm;
     this._setBackgroundColor();

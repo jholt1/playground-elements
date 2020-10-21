@@ -15,6 +15,7 @@
 import {LitElement, html, customElement, css, property} from 'lit-element';
 
 import './playground-project.js';
+import './playground-file-picker.js';
 import './playground-editor.js';
 import './playground-preview.js';
 
@@ -67,17 +68,37 @@ export class PlaygroundLayout extends LitElement {
       display: flex;
       height: 350px;
       min-width: 300px;
+      box-sizing: border-box;
       border: var(--playground-border, solid 1px #ddd);
     }
 
-    playground-editor {
+    * {
+      box-sizing: border-box;
+    }
+
+    #lhs {
       height: 100%;
       width: 70%;
-      overflow: hidden;
+      border-radius: inherit;
+      border-right: var(--playground-border, solid 1px #ddd);
+    }
+
+    playground-file-picker {
+      box-sizing: border-box;
+      border-bottom: var(--playground-border, solid 1px #ddd);
       border-radius: inherit;
       border-top-right-radius: 0;
+      border-bottom-left-radius: 0;
       border-bottom-right-radius: 0;
-      border-right: var(--playground-border, solid 1px #ddd);
+    }
+
+    playground-editor {
+      overflow: hidden;
+      border-radius: inherit;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      height: calc(100% - var(--playground-bar-height, 35px));
     }
 
     playground-preview {
@@ -128,6 +149,7 @@ export class PlaygroundLayout extends LitElement {
 
   render() {
     const projectId = 'project';
+    const editorId = 'editor';
     return html`
       <playground-project
         id=${projectId}
@@ -137,15 +159,26 @@ export class PlaygroundLayout extends LitElement {
         <slot></slot>
       </playground-project>
 
-      <playground-editor
-        part="editor"
-        exportparts="file-picker"
-        .theme=${this.theme}
-        .lineNumbers=${this.lineNumbers}
-        .project=${projectId}
-        .enableAddFile=${this.enableAddFile}
-      >
-      </playground-editor>
+      <div id="lhs">
+        <playground-file-picker
+          part="file-picker"
+          .project=${projectId}
+          .editor=${editorId}
+          .enableAddFile=${this.enableAddFile}
+        >
+        </playground-file-picker>
+
+        <playground-editor
+          id=${editorId}
+          part="editor"
+          exportparts="file-picker"
+          .theme=${this.theme}
+          .lineNumbers=${this.lineNumbers}
+          .project=${projectId}
+          .enableAddFile=${this.enableAddFile}
+        >
+        </playground-editor>
+      </div>
 
       <playground-preview
         part="preview"

@@ -50,6 +50,7 @@ export class PlaygroundPreview extends LitElement {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      box-sizing: border-box;
       border-bottom: var(--playground-border, solid 1px #ddd);
       font-size: 15px;
       color: var(--playground-preview-toolbar-foreground-color, #444);

@@ -22,29 +22,10 @@ import {
   query,
   PropertyValues,
 } from 'lit-element';
-import '@material/mwc-tab-bar';
-import {TabBar} from '@material/mwc-tab-bar';
-import '@material/mwc-tab';
 import {SampleFile} from '../shared/worker-api.js';
 import {PlaygroundProject} from './playground-project';
 import './playground-codemirror.js';
 import {PlaygroundCodeMirror} from './playground-codemirror.js';
-import {nothing} from 'lit-html';
-import '@material/mwc-icon-button';
-
-// Hack to workaround Safari crashing and reloading the entire browser tab
-// whenever an <mwc-tab> is clicked to switch files, because of a bug relating
-// to delegatesFocus and shadow roots.
-//
-// https://bugs.webkit.org/show_bug.cgi?id=215732
-// https://github.com/material-components/material-components-web-components/issues/1720
-import {Tab} from '@material/mwc-tab';
-((Tab.prototype as unknown) as {
-  createRenderRoot: Tab['createRenderRoot'];
-  attachShadow: Tab['attachShadow'];
-}).createRenderRoot = function () {
-  return this.attachShadow({mode: 'open', delegatesFocus: false});
-};
 
 /**
  * A text editor associated with a <playground-project>.
@@ -60,46 +41,17 @@ export class PlaygroundEditor extends LitElement {
       height: 350px;
     }
 
-    mwc-tab-bar {
-      --mdc-tab-height: var(--playground-bar-height, 35px);
-      /* The tab bar doesn't hold its height unless there are tabs inside it.
-      Also setting height here prevents a resize flashes after the project file
-      manifest loads. */
-      height: var(--mdc-tab-height);
-      color: blue;
-      --mdc-typography-button-text-transform: none;
-      --mdc-typography-button-font-weight: normal;
-      --mdc-typography-button-font-size: 0.75rem;
-      --mdc-typography-button-letter-spacing: normal;
-      --mdc-icon-button-size: 36px;
-      --mdc-icon-size: 18px;
-      --mdc-theme-primary: var(--playground-highlight-color, #6200ee);
-      --mdc-tab-text-label-color-default: var(
-        --playground-file-picker-foreground-color,
-        black
-      );
-      color: #444;
-      border-bottom: var(--playground-border, solid 1px #ddd);
-      background-color: var(--playground-file-picker-background-color, white);
-      border-radius: inherit;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-
-    mwc-tab {
-      flex: 0;
-    }
-
     slot {
       display: block;
     }
 
     playground-codemirror,
     slot {
-      height: calc(100% - var(--playground-bar-height, 35px));
+      height: 100%;
     }
 
     playground-codemirror {
+      box-sizing: border-box;
       border-radius: inherit;
       border-top-left-radius: 0;
       border-top-right-radius: 0;
@@ -122,9 +74,6 @@ export class PlaygroundEditor extends LitElement {
   @property({type: Boolean})
   enableAddFile = false;
 
-  @query('mwc-tab-bar')
-  private _tabBar!: TabBar;
-
   @query('playground-codemirror')
   private _editor!: PlaygroundCodeMirror;
 
@@ -143,12 +92,6 @@ export class PlaygroundEditor extends LitElement {
    */
   @property()
   filename?: string;
-
-  /**
-   * If true, don't display the top file-picker. Default: false (visible).
-   */
-  @property({type: Boolean, attribute: 'no-file-picker'})
-  noFilePicker = false;
 
   /**
    * If true, display a left-hand-side gutter with line numbers. Default false
@@ -182,7 +125,7 @@ export class PlaygroundEditor extends LitElement {
   @property()
   type: 'js' | 'ts' | 'html' | 'css' | undefined;
 
-  async update(changedProperties: PropertyValues) {
+  async update(changedProperties: PropertyValues<this>) {
     if (changedProperties.has('project')) {
       this._findProjectAndRegister();
     }
@@ -191,38 +134,12 @@ export class PlaygroundEditor extends LitElement {
         this.files && this.filename
           ? this.files.map((f) => f.name).indexOf(this.filename)
           : 0;
-      // TODO(justinfagnani): whyyyy?
-      if (this._tabBar) {
-        await this._tabBar.updateComplete;
-        this._tabBar.activeIndex = -1;
-        this._tabBar.activeIndex = this._currentFileIndex;
-      }
     }
     super.update(changedProperties);
   }
 
   render() {
     return html`
-      ${this.noFilePicker
-        ? nothing
-        : html` <mwc-tab-bar
-            part="file-picker"
-            .activeIndex=${this._currentFileIndex ?? 0}
-            @MDCTabBar:activated=${this._tabActivated}
-          >
-            ${this.files?.map((file) => {
-              const label =
-                file.label ||
-                file.name.substring(file.name.lastIndexOf('/') + 1);
-              return html`<mwc-tab
-                .isFadingIndicator=${true}
-                label=${label}
-              ></mwc-tab>`;
-            })}
-            ${this.enableAddFile
-              ? html`<mwc-icon-button icon="add"></mwc-icon-button>`
-              : nothing}
-          </mwc-tab-bar>`}
       ${this._currentFile
         ? html`
             <playground-codemirror
@@ -238,11 +155,6 @@ export class PlaygroundEditor extends LitElement {
           `
         : html`<slot></slot>`}
     `;
-  }
-
-  private _tabActivated(e: CustomEvent<{index: number}>) {
-    this._currentFileIndex = e.detail.index;
-    this.filename = this.files?.[this._currentFileIndex].name;
   }
 
   private _findProjectAndRegister() {

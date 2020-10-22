@@ -21,11 +21,7 @@ import {LitElement, customElement, css, property} from 'lit-element';
 // `CodeMirror` global.
 import './_codemirror/codemirror-bundle.js';
 
-// TODO(aomarks) Provide an API for loading these themes dynamically. We can
-// include a bunch of standard themes, but we don't want them to all be included
-// here if they aren't being used.
-import codemirrorStyles from './_codemirror/codemirror-styles.js';
-import monokaiTheme from './_codemirror/themes/monokai.css.js';
+import defaultCodemirrorStyle from './_codemirror/themes/default.css.js';
 
 // TODO(aomarks) @types/codemirror exists, but installing it and referencing
 // global `CodeMirror` errors with:
@@ -83,17 +79,6 @@ export class PlaygroundCodeEditor extends LitElement {
         font-size: var(--playground-code-font-size, unset);
       }
 
-      :host(:not([probing-codemirror-theme])) {
-        background-color: var(
-          --playground-file-editor-background-color,
-          var(--playground-file-editor-theme-background-color)
-        );
-      }
-
-      :host(:not([probing-codemirror-theme])) .CodeMirror {
-        background-color: inherit !important;
-      }
-
       .CodeMirror {
         height: 100% !important;
         font-family: inherit !important;
@@ -104,8 +89,7 @@ export class PlaygroundCodeEditor extends LitElement {
         padding-left: 5px;
       }
     `,
-    codemirrorStyles,
-    monokaiTheme,
+    defaultCodemirrorStyle,
   ];
 
   // Used by tests.
@@ -178,7 +162,6 @@ export class PlaygroundCodeEditor extends LitElement {
             break;
           case 'theme':
             cm.setOption('theme', this.theme);
-            this._setBackgroundColor();
             break;
           case 'readonly':
             cm.setOption('readOnly', this.readonly);
@@ -233,35 +216,6 @@ export class PlaygroundCodeEditor extends LitElement {
       }
     });
     this._codemirror = cm;
-    this._setBackgroundColor();
-  }
-
-  /**
-   * We want the CodeMirror theme's background color to win if
-   * "--playground-file-editor-background-color" is unset.
-   *
-   * However, there are no values we can use as the default for that property
-   * that allow for this. "revert" seems like it should work, but it doesn't.
-   * "initial" and "unset" also don't work.
-   *
-   * So we instead maintain a private CSS property called
-   * "--playground-file-editor-theme-background-color" that is always set to the
-   * theme's background-color, and we use that as the default. We detect this by
-   * momentarily disabling the rule that applies
-   * "--playground-file-editor-background-color" whenever the theme changes.
-   */
-  private _setBackgroundColor() {
-    this.setAttribute('probing-codemirror-theme', '');
-    const codeMirrorRootElement = this.shadowRoot!.querySelector(
-      '.CodeMirror'
-    )!;
-    const themeBgColor = window.getComputedStyle(codeMirrorRootElement)
-      .backgroundColor;
-    this.style.setProperty(
-      '--playground-file-editor-theme-background-color',
-      themeBgColor
-    );
-    this.removeAttribute('probing-codemirror-theme');
   }
 
   private _getLanguageMode() {

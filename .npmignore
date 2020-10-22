@@ -4,6 +4,7 @@
 /test/
 /src/test/
 /src/configurator/
+/scripts/
 /configurator/
 *.tsbuildinfo
 .prettierrc.json

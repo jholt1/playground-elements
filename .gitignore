@@ -3,6 +3,8 @@
 /lib/
 /service-worker/
 /shared/
+/src/_codemirror/
+/themes/
 /configurator/*.js
 /configurator/*.d.ts
 /configurator/*.d.ts.map

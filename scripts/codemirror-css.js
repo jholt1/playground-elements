@@ -6,8 +6,14 @@ import {fileURLToPath} from 'url';
 const customPropertyDefinitions = [
   {
     name: '--playground-code-background',
-    matcher: /^\.cm-s-[^ \.]+\.CodeMirror$/,
+    matcher: /^(\.cm-s-[^ \.]+)?\.CodeMirror$/,
     cmProperty: 'background',
+    defaultSelector: '.CodeMirror',
+  },
+  {
+    name: '--playground-code-color',
+    matcher: /^(\.cm-s-[^ \.]+)?\.CodeMirror$/,
+    cmProperty: 'color',
   },
   {
     name: '--playground-code-gutter-background',
@@ -56,22 +62,24 @@ const customPropertyDefinitions = [
     name: `--playground-code-${name}`,
     cmProperty: 'color',
     matcher: new RegExp(`^.cm-s-[^ \\.]*\\s*(span)?\\.cm-${name}$`),
+    defaultSelector: `.cm-${name}`,
   })),
 ];
 
 function propertyForRule(rule) {
   if (!rule.style | !rule.selectorText) {
-    return;
+    return [];
   }
+  const matching = [];
   const selectorText = rule.selectorText.trim();
-  for (const {name, cmProperty, matcher} of customPropertyDefinitions) {
-    if (selectorText.match(matcher)) {
-      const style = rule.style;
-      if (style[cmProperty]) {
-        return {name, prop: cmProperty};
+  for (const def of customPropertyDefinitions) {
+    if (selectorText.match(def.matcher)) {
+      if (rule.style[def.cmProperty]) {
+        matching.push(def);
       }
     }
   }
+  return matching;
 }
 
 /**
@@ -110,26 +118,33 @@ const rewriteDefault = (rules) => {
   // property.
   denormalizeRules(rules);
 
-  const unhandled = new Set(customPropertyDefinitions.map((prop) => prop.name));
+  const unhandled = new Set(customPropertyDefinitions);
   const handled = new Set();
   for (const rule of rules.cssRules) {
-    const match = propertyForRule(rule);
-    if (match === undefined) {
+    const defs = propertyForRule(rule);
+    if (defs.length === 0) {
       continue;
     }
     const style = rule.style;
-    const current = style[match.prop];
-    style[match.prop] = `var(${match.name}, ${current})`;
-    unhandled.delete(match.name);
-    handled.add(match.name);
-    //console.log(rule.selectorText);
-    //console.log('  ', style[match.prop]);
-    //console.log();
+    for (const def of defs) {
+      const current = style[def.cmProperty];
+      style[def.cmProperty] = `var(${def.name}, ${current})`;
+      unhandled.delete(def);
+      handled.add(def);
+      //console.log(rule.selectorText);
+      //console.log('  ', style[match.cmProperty]);
+      //console.log();
+    }
   }
   if (unhandled.size > 0) {
     console.log('UNHANDLED CUSTOM PROPS:');
-    for (const p of unhandled) {
-      console.log(`  ${p}`);
+    for (const def of unhandled) {
+      console.log(`  ${def.name}`);
+      if (def.defaultSelector) {
+        const newRule = `${def.defaultSelector} {${def.cmProperty}: var(${def.name});}`;
+        console.log({newRule});
+        rules.insertRule(newRule);
+      }
     }
   }
   console.log('========================');
@@ -144,23 +159,25 @@ const rewriteTheme = (rules, themeName) => {
   denormalizeRules(rules);
   const newRules = [];
   for (const rule of rules.cssRules) {
-    const match = propertyForRule(rule);
-    if (match === undefined) {
+    const defs = propertyForRule(rule);
+    if (defs.length === 0) {
       console.log('UNMATCHED', rule.cssText);
       continue;
     }
     const style = rule.style;
-    const current = style[match.prop];
-    const newRule = `${match.name}: ${current};`;
-    newRules.push(newRule);
-    //console.log(
-    //  `${rule.selectorText} { ${match.prop}: ${style[match.prop]}; }`
-    //);
-    //console.log('  ', newRule);
-    //console.log();
+    for (const def of defs) {
+      const current = style[def.cmProperty];
+      const newRule = `${def.name}: ${current};`;
+      newRules.push(newRule);
+      //console.log(
+      //  `${rule.selectorText} { ${match.cmProperty}: ${style[match.cmProperty]}; }`
+      //);
+      //console.log('  ', newRule);
+      //console.log();
+    }
   }
   console.log('========================');
-  return `.theme-${themeName} {
+  return `.playground-theme-${themeName} {
 ${newRules.sort().join('\n')}
 }`;
 };
@@ -198,6 +215,7 @@ function main() {
   // Theme styles
   const themeNames = [];
   const themeCssFilenames = fs.readdirSync(path.join(cmDir, 'theme'));
+  //    .filter((name) => name === 'yonce.css');
   for (const cssFilename of themeCssFilenames) {
     const themeName = cssFilename.replace(/\.css$/, '');
     themeNames.push(themeName);

@@ -76,12 +76,14 @@ export class PlaygroundCodeEditor extends LitElement {
         display: block;
         font-family: var(--playground-code-font-family, monospace);
         font-size: var(--playground-code-font-size, unset);
+        background: var(--playground-code-background);
       }
 
       .CodeMirror {
         height: 100% !important;
         font-family: inherit !important;
         border-radius: inherit;
+        background: inherit;
       }
 
       .CodeMirror-scroll {

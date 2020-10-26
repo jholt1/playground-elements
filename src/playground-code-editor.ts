@@ -49,7 +49,6 @@ interface CodeMirrorConfiguration {
   value?: string;
   mode?: string | null;
   lineNumbers?: boolean;
-  theme?: string;
   readOnly?: boolean | 'nocursor';
 }
 
@@ -129,12 +128,6 @@ export class PlaygroundCodeEditor extends LitElement {
   @property({type: Boolean, reflect: true})
   readonly = false;
 
-  /**
-   * The CodeMirror theme to load.
-   */
-  @property()
-  theme = 'default';
-
   private _resizeObserver?: ResizeObserver;
   private _valueChangingFromOutside = false;
 
@@ -159,9 +152,6 @@ export class PlaygroundCodeEditor extends LitElement {
             break;
           case 'type':
             cm.setOption('mode', this._getLanguageMode());
-            break;
-          case 'theme':
-            cm.setOption('theme', this.theme);
             break;
           case 'readonly':
             cm.setOption('readOnly', this.readonly);
@@ -203,7 +193,6 @@ export class PlaygroundCodeEditor extends LitElement {
         value: this.value ?? '',
         lineNumbers: this.lineNumbers,
         mode: this._getLanguageMode(),
-        theme: this.theme,
         readOnly: this.readonly,
       }
     );

@@ -2,6 +2,7 @@ import cssom from 'cssom';
 import * as fs from 'fs';
 import * as path from 'path';
 import {fileURLToPath} from 'url';
+import CleanCSS from 'clean-css';
 
 const customPropertyDefinitions = [
   {
@@ -121,6 +122,11 @@ const rewriteDefault = (rules) => {
   const unhandled = new Set(customPropertyDefinitions);
   const handled = new Set();
   for (const rule of rules.cssRules) {
+    if (!rule.selectorText) {
+      continue;
+    }
+    // We don't need this prefix.
+    rule.selectorText = rule.selectorText.replace('.cm-s-default', '');
     const defs = propertyForRule(rule);
     if (defs.length === 0) {
       continue;
@@ -182,6 +188,15 @@ ${newRules.sort().join('\n')}
 }`;
 };
 
+const minifier = new CleanCSS({level: 2, format: 'beautify'});
+const minifyCss = (cssText) => {
+  const r = minifier.minify(cssText);
+  if (r.errors.length !== 0) {
+    throw new Error(`CleanCSS errors: ${r.errors.join(';')}`);
+  }
+  return r.styles;
+};
+
 const cssModule = (cssText) => `import {css} from 'lit-element';
 const style = css\`${cssText}\`;
 export default style;
@@ -223,7 +238,9 @@ function main() {
       path.join(cmDir, 'theme', cssFilename),
       'utf8'
     );
-    const ourThemeCss = rewriteTheme(cssom.parse(cmThemeCss), themeName);
+    const ourThemeCss = minifyCss(
+      rewriteTheme(cssom.parse(cmThemeCss), themeName)
+    );
     // .css
     fs.writeFileSync(
       path.join(ourThemeCssDir, cssFilename),
@@ -243,7 +260,7 @@ function main() {
     path.join(cmDir, 'lib', 'codemirror.css'),
     'utf8'
   );
-  const ourDefaultCss = rewriteDefault(cssom.parse(cmDefaultCss));
+  const ourDefaultCss = minifyCss(rewriteDefault(cssom.parse(cmDefaultCss)));
   // .css
   fs.writeFileSync(
     path.join(ourThemeCssDir, 'default.css'),

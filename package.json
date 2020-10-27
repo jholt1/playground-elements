@@ -37,6 +37,7 @@
     "codemirror-grammar-mode": "^0.1.10",
     "cssom": "^0.4.4",
     "google_modes": "git+https://github.com/codemirror/google-modes.git#57b26bb0e76ca5d3b83b12faf13ce1054d34bddf",
+    "playwright": "^1.5.1",
     "prettier": "^2.0.5",
     "rollup": "^2.21.0",
     "rollup-plugin-copy": "^3.3.0",

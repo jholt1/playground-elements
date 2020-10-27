@@ -50,6 +50,7 @@ interface CodeMirrorConfiguration {
   mode?: string | null;
   lineNumbers?: boolean;
   readOnly?: boolean | 'nocursor';
+  styleActiveLine?: boolean;
 }
 
 // TODO(aomarks) Could we upstream this to lit-element? It adds much stricter
@@ -196,6 +197,7 @@ export class PlaygroundCodeEditor extends LitElement {
         lineNumbers: this.lineNumbers,
         mode: this._getLanguageMode(),
         readOnly: this.readonly,
+        styleActiveLine: true,
       }
     );
     cm.on('change', () => {

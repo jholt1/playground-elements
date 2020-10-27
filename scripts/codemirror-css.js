@@ -6,9 +6,24 @@ import CleanCSS from 'clean-css';
 
 const customPropertyDefinitions = [
   {
+    name: '--playground-code-selected',
+    matcher: /^(\.cm-s-[^ \.]+)?\s*(div)?\.CodeMirror-selected$/,
+    cmProperty: ['background', 'background-color'],
+  },
+  {
+    name: '--playground-code-cursor',
+    matcher: /^(\.cm-s-[^ \.]+)?\s*\.CodeMirror-cursor$/,
+    cmProperty: ['border-left'],
+  },
+  {
+    name: '--playground-code-activeline-background',
+    matcher: /^(\.cm-s-[^ \.]+)?\s*\.CodeMirror-activeline-background$/,
+    cmProperty: ['background', 'background-color'],
+  },
+  {
     name: '--playground-code-background',
-    matcher: /^(\.cm-s-[^ \.]+)?\.CodeMirror$/,
-    cmProperty: 'background',
+    matcher: /^(\.cm-s-[^ \.]+)?\s*\.CodeMirror$/,
+    cmProperty: ['background', 'background-color'],
     defaultSelector: '.CodeMirror',
   },
   {
@@ -19,15 +34,10 @@ const customPropertyDefinitions = [
   {
     name: '--playground-code-gutter-background',
     matcher: /^(\.cm-s-[^ \.]+)?\.CodeMirror-gutters$/,
-    cmProperty: 'background-color',
+    cmProperty: ['background', 'background-color'],
   },
   {
-    name: '--playground-code-activeline-background',
-    matcher: /^(\.cm-s-[^ \.]+)?\s*\.CodeMirror-activeline-background$/,
-    cmProperty: 'background',
-  },
-  {
-    name: '--playground-linenumber-color',
+    name: '--playground-code-linenumber-color',
     matcher: /^(\.cm-s-[^ \.]+)?\s*\.CodeMirror-linenumber$/,
     cmProperty: 'color',
   },
@@ -59,10 +69,12 @@ const customPropertyDefinitions = [
     'meta',
     'operator',
     'qualifier',
+    'hr',
+    'invalidchar',
   ].map((name) => ({
     name: `--playground-code-${name}`,
     cmProperty: 'color',
-    matcher: new RegExp(`^.cm-s-[^ \\.]*\\s*(span)?\\.cm-${name}$`),
+    matcher: new RegExp(`^(.cm-s-[^ \\.]*)?\\s*(span)?\\.cm-${name}$`),
     defaultSelector: `.cm-${name}`,
   })),
 ];
@@ -75,8 +87,15 @@ function propertyForRule(rule) {
   const selectorText = rule.selectorText.trim();
   for (const def of customPropertyDefinitions) {
     if (selectorText.match(def.matcher)) {
-      if (rule.style[def.cmProperty]) {
-        matching.push(def);
+      let props = def.cmProperty;
+      if (typeof props === 'string') {
+        props = [props];
+      }
+      for (const p of props) {
+        if (rule.style[p]) {
+          matching.push([def, p]);
+          break;
+        }
       }
     }
   }
@@ -127,14 +146,12 @@ const rewriteDefault = (rules) => {
     }
     // We don't need this prefix.
     rule.selectorText = rule.selectorText.replace('.cm-s-default', '');
+
     const defs = propertyForRule(rule);
-    if (defs.length === 0) {
-      continue;
-    }
     const style = rule.style;
-    for (const def of defs) {
-      const current = style[def.cmProperty];
-      style[def.cmProperty] = `var(${def.name}, ${current})`;
+    for (const [def, p] of defs) {
+      const current = style[p];
+      style[p] = `var(${def.name}, ${current})`;
       unhandled.delete(def);
       handled.add(def);
       //console.log(rule.selectorText);
@@ -171,8 +188,8 @@ const rewriteTheme = (rules, themeName) => {
       continue;
     }
     const style = rule.style;
-    for (const def of defs) {
-      const current = style[def.cmProperty];
+    for (const [def, p] of defs) {
+      const current = style[p];
       const newRule = `${def.name}: ${current};`;
       newRules.push(newRule);
       //console.log(
@@ -229,8 +246,9 @@ function main() {
 
   // Theme styles
   const themeNames = [];
-  const themeCssFilenames = fs.readdirSync(path.join(cmDir, 'theme'));
-  //    .filter((name) => name === 'yonce.css');
+  const themeCssFilenames = fs
+    .readdirSync(path.join(cmDir, 'theme'))
+    .filter((name) => name === 'liquibyte.css');
   for (const cssFilename of themeCssFilenames) {
     const themeName = cssFilename.replace(/\.css$/, '');
     themeNames.push(themeName);
